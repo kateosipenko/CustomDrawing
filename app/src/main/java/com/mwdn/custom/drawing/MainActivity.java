@@ -11,6 +11,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
 import android.widget.RadioGroup;
 import android.widget.RadioGroup.OnCheckedChangeListener;
 
@@ -27,6 +28,7 @@ import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnCheckedChanged;
 import butterknife.OnClick;
 import butterknife.Unbinder;
 
@@ -45,6 +47,10 @@ public class MainActivity extends AppCompatActivity implements LayersAdapterCall
     RadioGroup styleGroup;
     @BindView(R.id.am_layer_mode)
     AppCompatSpinner modeSpinner;
+    @BindView(R.id.am_close_path_check)
+    CheckBox closePathBox;
+    @BindView(R.id.am_mesh_check)
+    CheckBox meshBox;
 
     private Unbinder unbinder;
     private LayersAdapter adapter;
@@ -70,44 +76,12 @@ public class MainActivity extends AppCompatActivity implements LayersAdapterCall
     @Override
     public void onLayerChosen(Layer layer) {
         drawingView.setCurrentLayer(layer);
-        switch (layer.getTransformType()) {
-            case TransformType.ROTATE:
-                transformGroup.check(R.id.am_transform_rotate);
-                break;
-            case TransformType.SKEW:
-                transformGroup.check(R.id.am_transform_skew);
-                break;
-            case TransformType.TRANSLATE:
-                transformGroup.check(R.id.am_transform_translate);
-                break;
-        }
-        switch (layer.getMatrixType()) {
-            case MatrixType.LAYER:
-                matrixGroup.check(R.id.am_view_matrix);
-                break;
-            case MatrixType.PAINT:
-                matrixGroup.check(R.id.am_paint_matrix);
-                break;
-            case MatrixType.PATH:
-                matrixGroup.check(R.id.am_path_matrix);
-                break;
-            case MatrixType.SHADER:
-                matrixGroup.check(R.id.am_shader_matrix);
-                break;
-        }
-
-        if (layer.getPaintStyle() == Paint.Style.STROKE) {
-            styleGroup.check(R.id.am_style_stroke);
-        } else {
-            styleGroup.check(R.id.am_style_fill);
-        }
-
-        PorterDuff.Mode mode = layer.getLayerMode();
-        if (mode == null) {
-            modeSpinner.setSelection(0);
-        } else {
-            modeSpinner.setSelection(mode.ordinal() + 1);
-        }
+        fillTransformType(layer);
+        fillMatrixType(layer);
+        fillPaintStyle(layer);
+        fillLayerMode(layer);
+        fillCloseType(layer);
+        fillMeshCheck(layer);
     }
 
     @Override
@@ -181,6 +155,16 @@ public class MainActivity extends AppCompatActivity implements LayersAdapterCall
         drawingView.setFillingType(type);
     }
 
+    @OnCheckedChanged(R.id.am_close_path_check)
+    void onClosePathCheckChanged(boolean isChecked) {
+        drawingView.setNeedClosePath(isChecked);
+    }
+
+    @OnCheckedChanged(R.id.am_mesh_check)
+    void onMeshCheckChanged(boolean isChecked) {
+        drawingView.setDrawBitmapMesh(isChecked);
+    }
+
     private void setTransformType(int checkedId) {
         @TransformType int type;
         switch (checkedId) {
@@ -207,9 +191,6 @@ public class MainActivity extends AppCompatActivity implements LayersAdapterCall
             case R.id.am_path_matrix:
                 matrixType = MatrixType.PATH;
                 break;
-            case R.id.am_paint_matrix:
-                matrixType = MatrixType.PAINT;
-                break;
             case R.id.am_view_matrix:
             default:
                 matrixType = MatrixType.LAYER;
@@ -221,6 +202,89 @@ public class MainActivity extends AppCompatActivity implements LayersAdapterCall
     private void refreshLayersList() {
         adapter.setLayers(drawingView.getLayers());
     }
+
+    // region FILL_VIEW
+
+    private void fillTransformType(Layer layer) {
+        if (transformGroup == null) {
+            return;
+        }
+
+        switch (layer.getTransformType()) {
+            case TransformType.ROTATE:
+                transformGroup.check(R.id.am_transform_rotate);
+                break;
+            case TransformType.SKEW:
+                transformGroup.check(R.id.am_transform_skew);
+                break;
+            case TransformType.TRANSLATE:
+                transformGroup.check(R.id.am_transform_translate);
+                break;
+        }
+    }
+
+    private void fillMatrixType(Layer layer) {
+        if (matrixGroup == null) {
+            return;
+        }
+
+        switch (layer.getMatrixType()) {
+            case MatrixType.LAYER:
+                matrixGroup.check(R.id.am_view_matrix);
+                break;
+            case MatrixType.PATH:
+                matrixGroup.check(R.id.am_path_matrix);
+                break;
+            case MatrixType.SHADER:
+                matrixGroup.check(R.id.am_shader_matrix);
+                break;
+        }
+    }
+
+    private void fillPaintStyle(Layer layer) {
+        if (styleGroup == null) {
+            return;
+        }
+
+        if (layer.getPaintStyle() == Paint.Style.STROKE) {
+            styleGroup.check(R.id.am_style_stroke);
+        } else {
+            styleGroup.check(R.id.am_style_fill);
+        }
+    }
+
+    private void fillLayerMode(Layer layer) {
+        if (modeSpinner == null) {
+            return;
+        }
+
+        PorterDuff.Mode mode = layer.getLayerMode();
+        if (mode == null) {
+            modeSpinner.setSelection(0);
+        } else {
+            modeSpinner.setSelection(mode.ordinal() + 1);
+        }
+    }
+
+    private void fillCloseType(Layer layer) {
+        if (closePathBox == null) {
+            return;
+        }
+
+        closePathBox.setChecked(layer.needClosePath());
+    }
+
+    private void fillMeshCheck(Layer layer) {
+        if (meshBox == null) {
+            return;
+        }
+
+        meshBox.setChecked(layer.needDrawMesh());
+    }
+
+    // endregion FILL_VIEW
+
+    // region INIT
 
     private void initSpinner() {
         layerModes.add("None");
@@ -250,4 +314,6 @@ public class MainActivity extends AppCompatActivity implements LayersAdapterCall
         styleGroup.setOnCheckedChangeListener(this);
         transformGroup.setOnCheckedChangeListener(this);
     }
+
+    // endregion INIT
 }

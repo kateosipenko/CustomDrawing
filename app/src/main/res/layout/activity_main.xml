@@ -3,7 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    tools:ignore="ContentDescription,HardcodedText,MissingConstraints">
 
     <com.mwdn.custom.drawing.view.DrawingView
         android:id="@+id/am_drawing_view"
@@ -15,12 +16,20 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <Button
-        android:id="@+id/am_add_layer"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Add Layer"
+        android:id="@+id/am_remove_layer"
+        style="@style/ButtonStyle"
+        android:layout_marginEnd="@dimen/margin_normal"
+        android:text="-"
         app:layout_constraintBottom_toBottomOf="@id/am_drawing_view"
         app:layout_constraintEnd_toEndOf="@id/am_drawing_view" />
+
+    <Button
+        android:id="@+id/am_add_layer"
+        style="@style/ButtonStyle"
+        android:layout_marginEnd="@dimen/margin_normal"
+        android:text="+"
+        app:layout_constraintBottom_toBottomOf="@id/am_drawing_view"
+        app:layout_constraintEnd_toStartOf="@id/am_remove_layer" />
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/am_layers"
@@ -43,90 +52,126 @@
 
         <android.support.constraint.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:padding="@dimen/margin_medium">
+
+            <!--region PAINT-->
 
             <TextView
                 android:id="@+id/am_paint_title"
-                style="@style/TextAppearance.AppCompat.Medium"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
+                style="@style/TitleStyle"
                 android:text="Paint"
                 app:layout_constraintBottom_toBottomOf="@+id/am_paint_color"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="@+id/am_paint_color" />
 
-            <View
-                android:id="@+id/am_paint_color"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginStart="8dp"
-                android:layout_marginTop="4dp"
-                android:background="#FF0000"
-                app:layout_constraintStart_toEndOf="@id/am_paint_title"
+            <ImageView
+                android:id="@+id/am_paint_image"
+                style="@style/FillTypeIconStyle"
+                android:scaleType="centerCrop"
+                android:src="@drawable/image"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
             <ImageView
                 android:id="@+id/am_paint_shader"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginStart="8dp"
-                android:layout_marginTop="4dp"
+                style="@style/FillTypeIconStyle"
                 android:src="@drawable/pattern"
-                app:layout_constraintStart_toEndOf="@id/am_paint_color"
+                app:layout_constraintEnd_toStartOf="@id/am_paint_image"
+                app:layout_constraintTop_toTopOf="@id/am_paint_color" />
+
+            <View
+                android:id="@+id/am_paint_color"
+                style="@style/FillTypeIconStyle"
+                android:background="@color/paint_main"
+                app:layout_constraintEnd_toStartOf="@id/am_paint_shader"
                 app:layout_constraintTop_toTopOf="parent" />
 
-            <ImageView
-                android:id="@+id/am_paint_image"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginStart="8dp"
-                android:layout_marginTop="4dp"
-                android:scaleType="centerCrop"
-                android:src="@drawable/image"
-                app:layout_constraintStart_toEndOf="@id/am_paint_shader"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <Button
-                android:id="@+id/am_remove_layer"
+            <CheckBox
+                android:id="@+id/am_mesh_check"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="Remove Layer"
-                app:layout_constraintStart_toEndOf="@id/am_paint_image"
-                app:layout_constraintTop_toTopOf="parent" />
+                android:layout_marginEnd="@dimen/margin_normal"
+                android:text="Mesh"
+                app:layout_constraintBottom_toBottomOf="@+id/am_paint_color"
+                app:layout_constraintEnd_toStartOf="@id/am_paint_color"
+                app:layout_constraintTop_toTopOf="@+id/am_paint_color" />
+
+            <View
+                android:id="@+id/am_divider_paint"
+                style="@style/DividerStyle"
+                app:layout_constraintTop_toBottomOf="@id/am_paint_color" />
+
+            <!--endregion PAINT-->
+
+            <!--region STROKE-->
+
+            <TextView
+                android:id="@+id/am_stroke_title"
+                style="@style/TitleStyle"
+                android:text="Stroke\nWidth"
+                app:layout_constraintBottom_toBottomOf="@+id/am_stroke_add"
+                app:layout_constraintStart_toStartOf="@id/am_paint_title"
+                app:layout_constraintTop_toTopOf="@+id/am_stroke_add" />
 
             <Button
                 android:id="@+id/am_stroke_add"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                style="@style/ButtonStyle"
+                android:layout_marginTop="@dimen/margin_normal"
                 android:text="+"
-                app:layout_constraintStart_toStartOf="@id/am_paint_title"
-                app:layout_constraintTop_toBottomOf="@id/am_paint_color" />
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/am_divider_paint" />
 
             <Button
                 android:id="@+id/am_stroke_minus"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                style="@style/ButtonStyle"
+                android:layout_marginEnd="@dimen/margin_normal"
                 android:text="-"
-                app:layout_constraintStart_toEndOf="@id/am_stroke_add"
+                app:layout_constraintEnd_toStartOf="@id/am_stroke_add"
                 app:layout_constraintTop_toTopOf="@id/am_stroke_add" />
 
+            <CheckBox
+                android:id="@+id/am_close_path_check"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/margin_normal"
+                android:text="Close Path"
+                app:layout_constraintBottom_toBottomOf="@id/am_stroke_add"
+                app:layout_constraintEnd_toStartOf="@id/am_stroke_minus"
+                app:layout_constraintTop_toTopOf="@id/am_stroke_add" />
+
+            <View
+                android:id="@+id/am_divider_stroke"
+                style="@style/DividerStyle"
+                app:layout_constraintTop_toBottomOf="@id/am_stroke_minus" />
+
+            <!--endregion STROKE-->
+
+            <!--region FILL TYPE-->
+
+            <TextView
+                android:id="@+id/am_fill_title"
+                style="@style/TitleStyle"
+                android:text="Fill Type"
+                app:layout_constraintBottom_toBottomOf="@+id/am_paint_style"
+                app:layout_constraintStart_toStartOf="@id/am_paint_title"
+                app:layout_constraintTop_toTopOf="@+id/am_paint_style" />
 
             <RadioGroup
                 android:id="@+id/am_paint_style"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_height="@dimen/icon_size"
+                android:layout_marginTop="@dimen/margin_normal"
+                android:gravity="center"
                 android:orientation="horizontal"
-                app:layout_constraintStart_toStartOf="@id/am_paint_title"
-                app:layout_constraintTop_toBottomOf="@id/am_stroke_minus">
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/am_divider_stroke">
 
                 <RadioButton
                     android:id="@+id/am_style_stroke"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/margin_normal"
                     android:checked="true"
                     android:text="Stroke" />
 
@@ -138,112 +183,130 @@
 
             </RadioGroup>
 
+            <View
+                android:id="@+id/am_divider_fill"
+                style="@style/DividerStyle"
+                app:layout_constraintTop_toBottomOf="@id/am_paint_style" />
+
+            <!--endregion FILL TYPE-->
+
+            <!--region MATRIX-->
+
             <TextView
                 android:id="@+id/am_matrix_title"
-                style="@style/TextAppearance.AppCompat.Medium"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:text="Matrix to update:"
+                style="@style/TitleStyle"
+                android:layout_marginTop="@dimen/margin_normal"
+                android:text="Matrix to update"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/am_paint_style" />
+                app:layout_constraintTop_toBottomOf="@id/am_divider_fill" />
 
             <RadioGroup
                 android:id="@+id/am_matrix_group"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
                 android:orientation="horizontal"
                 app:layout_constraintStart_toStartOf="@id/am_paint_title"
                 app:layout_constraintTop_toBottomOf="@id/am_matrix_title">
 
                 <RadioButton
                     android:id="@+id/am_view_matrix"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:checked="true"
                     android:text="Layer" />
 
                 <RadioButton
                     android:id="@+id/am_path_matrix"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:text="Path" />
 
                 <RadioButton
-                    android:id="@+id/am_paint_matrix"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Paint" />
-
-                <RadioButton
                     android:id="@+id/am_shader_matrix"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:text="Shader" />
 
             </RadioGroup>
 
+            <View
+                android:id="@+id/am_divider_matrix"
+                style="@style/DividerStyle"
+                app:layout_constraintTop_toBottomOf="@id/am_matrix_group" />
+
+            <!--endregion MATRIX-->
+
+            <!--region TRANSFORM-->
+
             <TextView
                 android:id="@+id/am_transform_title"
-                style="@style/TextAppearance.AppCompat.Medium"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:text="Transformation:"
+                style="@style/TitleStyle"
+                android:layout_marginTop="@dimen/margin_normal"
+                android:text="Transformation"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/am_matrix_group" />
+                app:layout_constraintTop_toBottomOf="@id/am_divider_matrix" />
 
             <RadioGroup
                 android:id="@+id/am_transform_group"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
                 android:orientation="horizontal"
                 app:layout_constraintStart_toStartOf="@id/am_transform_title"
                 app:layout_constraintTop_toBottomOf="@id/am_transform_title">
 
                 <RadioButton
                     android:id="@+id/am_transform_translate"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:checked="true"
                     android:text="Translate" />
 
                 <RadioButton
                     android:id="@+id/am_transform_skew"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:text="Skew" />
 
                 <RadioButton
                     android:id="@+id/am_transform_rotate"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:text="Rotate" />
 
             </RadioGroup>
 
+            <View
+                android:id="@+id/am_divider_transform"
+                style="@style/DividerStyle"
+                app:layout_constraintTop_toBottomOf="@id/am_transform_group" />
+
+            <!--endregion TRANSFORM-->
+
+            <!--region MODE-->
+
             <TextView
                 android:id="@+id/am_mode_title"
-                style="@style/TextAppearance.AppCompat.Medium"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
+                style="@style/TitleStyle"
+                android:layout_marginTop="@dimen/margin_normal"
                 android:text="Layer Mode"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/am_transform_group" />
+                app:layout_constraintTop_toBottomOf="@+id/am_divider_transform" />
 
             <android.support.v7.widget.AppCompatSpinner
                 android:id="@+id/am_layer_mode"
                 style="@style/Widget.AppCompat.Light.DropDownItem.Spinner"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="4dp"
-                android:padding="4dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@id/am_mode_title"
-                app:layout_constraintTop_toTopOf="@id/am_mode_title" />
+                android:padding="@dimen/margin_normal"
+                app:layout_constraintTop_toBottomOf="@id/am_mode_title" />
+
+            <!--endregion MODE-->
 
         </android.support.constraint.ConstraintLayout>
 

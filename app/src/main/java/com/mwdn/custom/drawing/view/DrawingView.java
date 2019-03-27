@@ -11,9 +11,9 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.Xfermode;
@@ -139,6 +139,16 @@ public class DrawingView extends View {
         invalidate();
     }
 
+    public void setDrawBitmapMesh(boolean needDraw) {
+        currentLayer.setDrawBitmapMesh(needDraw);
+        invalidate();
+    }
+
+    public void setNeedClosePath(boolean needClosePath) {
+        currentLayer.setPathClosed(needClosePath);
+        invalidate();
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -177,7 +187,7 @@ public class DrawingView extends View {
 
             @Override
             public boolean onDown(MotionEvent e) {
-                currentLayer.onStartMove(e.getX(), e.getY(), !currentLayer.path.isEmpty());
+                currentLayer.onStartMove(e.getX(), e.getY(), !currentLayer.path.isEmpty() || currentLayer.needDrawMesh);
                 invalidate();
                 return true;
             }
@@ -217,18 +227,19 @@ public class DrawingView extends View {
 
         private int layerId;
 
+        private boolean isPathClosed = false;
         private Path path = new Path();
+        private List<PointF> points = new ArrayList<>();
         private Path drawingPath = new Path();
 
         private Paint paint;
         private Bitmap bitmap;
         private BitmapShader shader;
 
-        private Rect imageRect;
+        private RectF imageRect;
 
         private Matrix layerMatrix = new Matrix();
         private Matrix pathMatrix = new Matrix();
-        private Matrix paintMatrix = new Matrix();
         private Matrix shaderMatrix = new Matrix();
 
         @MatrixType
@@ -240,6 +251,12 @@ public class DrawingView extends View {
         private RectF pathBounds = new RectF();
 
         private PorterDuff.Mode currentMode;
+
+        private boolean needDrawMesh = false;
+        private int meshWidth = 3;
+        private int meshHeight = 3;
+        private float[] meshVertices;
+        private int[] meshColors;
 
         Layer() {
             paint = new Paint();
@@ -280,9 +297,27 @@ public class DrawingView extends View {
             return xfermode != null ? currentMode : null;
         }
 
+        public boolean needClosePath() {
+            return isPathClosed;
+        }
+
+        public boolean needDrawMesh() {
+            return needDrawMesh;
+        }
+
         void setLayerMode(PorterDuff.Mode mode) {
             currentMode = mode;
             paint.setXfermode(new PorterDuffXfermode(mode));
+        }
+
+        void setDrawBitmapMesh(boolean needDrawBitmapMesh) {
+            this.needDrawMesh = needDrawBitmapMesh;
+            updateMeshVertices();
+        }
+
+        void setPathClosed(boolean isClosed) {
+            this.isPathClosed = isClosed;
+            recreatePath();
         }
 
         void removeMode() {
@@ -293,11 +328,23 @@ public class DrawingView extends View {
             paint.setStrokeWidth(paint.getStrokeWidth() + change);
         }
 
+        @SuppressLint("DrawAllocation")
         void onDraw(Canvas canvas) {
             canvas.save();
             canvas.concat(layerMatrix);
             if (bitmap != null) {
-                canvas.drawBitmap(bitmap, null, imageRect, paint);
+                if (needDrawMesh) {
+                    float[] drawnMesh = new float[meshVertices.length];
+                    pathMatrix.mapPoints(drawnMesh, meshVertices);
+
+                    canvas.drawBitmapMesh(bitmap, meshWidth, meshHeight, drawnMesh, 0, null, 0, null);
+                    canvas.drawVertices(Canvas.VertexMode.TRIANGLES, (int) (drawnMesh.length / 2f), drawnMesh, 0,
+                            null, 0, meshColors, 0, null, 0, 0, paint);
+                    canvas.restore();
+                    return;
+                } else {
+                    canvas.drawBitmap(bitmap, null, imageRect, paint);
+                }
             }
             if (!drawingPath.isEmpty()) {
                 canvas.drawPath(drawingPath, paint);
@@ -306,15 +353,6 @@ public class DrawingView extends View {
             }
 
             canvas.restore();
-        }
-
-        private void onStartMove(float x, float y, boolean isMoving) {
-            this.isMoving = isMoving;
-            if (!isMoving) {
-                path.reset();
-                path.moveTo(x, y);
-                path.lineTo(x, y);
-            }
         }
 
         void setFillingType(@FillingType int type, Resources resources, int viewWidth, int viewHeight) {
@@ -326,8 +364,9 @@ public class DrawingView extends View {
                     break;
                 case FillingType.IMAGE:
                     bitmap = BitmapFactory.decodeResource(resources, R.drawable.image);
-                    imageRect = new Rect(0, 0, viewWidth, viewHeight);
+                    imageRect = new RectF(0, 0, viewWidth, viewHeight);
                     paint.setShader(null);
+                    updateMeshVertices();
                     break;
                 case FillingType.SHADER:
                     Bitmap pattern = BitmapFactory.decodeResource(resources, R.drawable.pattern);
@@ -344,6 +383,29 @@ public class DrawingView extends View {
 
         void setTransformType(int type) {
             this.transformType = type;
+        }
+
+        private void onStartMove(float x, float y, boolean isMoving) {
+            this.isMoving = isMoving;
+            points.clear();
+            if (!isMoving) {
+                path.reset();
+                path.moveTo(x, y);
+                path.lineTo(x, y);
+                points.add(new PointF(x, y));
+            }
+        }
+
+        private void onEndMove(float x, float y) {
+            if (!isMoving) {
+                path.lineTo(x, y);
+                points.add(new PointF(x, y));
+                if (isPathClosed) {
+                    path.close();
+                }
+
+                updateDrawnPath();
+            }
         }
 
         private void onMove(float x, float y, float dx, float dy, float viewWidth, float viewHeight) {
@@ -363,6 +425,7 @@ public class DrawingView extends View {
                 }
                 updateDrawnPath();
             } else {
+                points.add(new PointF(x, y));
                 path.lineTo(x, y);
             }
         }
@@ -372,15 +435,6 @@ public class DrawingView extends View {
             updateDrawnPath();
         }
 
-        private void onEndMove(float x, float y) {
-            if (!isMoving) {
-                path.lineTo(x, y);
-                path.close();
-
-                updateDrawnPath();
-            }
-        }
-
         private void updateDrawnPath() {
             path.transform(pathMatrix, drawingPath);
             if (shader != null) {
@@ -388,10 +442,71 @@ public class DrawingView extends View {
             }
         }
 
+        private void updateMeshVertices() {
+            if (bitmap == null) {
+                return;
+            }
+
+            int columnsCount = meshWidth + 1;
+            int rowsCount = meshHeight + 1;
+            meshVertices = new float[columnsCount * rowsCount * 2];
+            meshColors = new int[columnsCount * rowsCount];
+
+            float xStep = bitmap.getWidth() / (float) columnsCount;
+            float yStep = bitmap.getHeight() / (float) rowsCount;
+            int currentColor = Color.GREEN;
+            int currentRow = 0;
+            int currentColumn = 0;
+            int xStart = 0;
+            int yStart = 0;
+            int colorIndex = 0;
+            float direction = 1;
+            for (int i = 0; i < meshVertices.length; i++) {
+                if (i % 2 == 0) {
+                    meshVertices[i] = xStart + currentColumn * xStep * direction;
+                    currentColor = currentColor == Color.GREEN ? Color.RED : Color.GREEN;
+                    meshColors[colorIndex] = currentColor;
+                    ++colorIndex;
+                } else {
+                    meshVertices[i] = yStart + currentRow * yStep;
+                    ++currentColumn;
+                }
+
+                if (currentColumn == columnsCount) {
+                    currentColumn = 0;
+                    ++currentRow;
+
+//                    if (currentRow >= rowsCount / 2f) {
+//                        direction = -1;
+//                    }
+
+                    currentColor = currentRow % 2 == 0 ? Color.RED : Color.GREEN;
+                    xStart -= xStep * 0.1f;
+                    xStep *= 1.3;
+                }
+            }
+        }
+
+        private void recreatePath() {
+            path.reset();
+            for (int i = 0; i < points.size(); i++) {
+                PointF point = points.get(i);
+                if (i == 0) {
+                    path.moveTo(point.x, point.y);
+                }
+
+                path.lineTo(point.x, point.y);
+            }
+
+            if (isPathClosed) {
+                path.close();
+            }
+
+            updateDrawnPath();
+        }
+
         private Matrix getCurrentMatrix() {
             switch (matrixType) {
-                case MatrixType.PAINT:
-                    return paintMatrix;
                 case MatrixType.PATH:
                     return pathMatrix;
                 case MatrixType.SHADER:
@@ -411,13 +526,12 @@ public class DrawingView extends View {
         int IMAGE = 2;
     }
 
-    @IntDef({MatrixType.LAYER, MatrixType.PATH, MatrixType.PAINT, MatrixType.SHADER})
+    @IntDef({MatrixType.LAYER, MatrixType.PATH, MatrixType.SHADER})
     @Retention(RetentionPolicy.SOURCE)
     public @interface MatrixType {
         int LAYER = 0;
         int PATH = 1;
-        int PAINT = 2;
-        int SHADER = 3;
+        int SHADER = 2;
     }
 
     @IntDef({TransformType.TRANSLATE, TransformType.SKEW, TransformType.ROTATE})
